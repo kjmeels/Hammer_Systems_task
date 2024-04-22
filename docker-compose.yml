@@ -1,0 +1,44 @@
+version: "3.8"
+
+x-app_environment: &app_environment
+  environment:
+    - DEBUG
+    - SECRET_KEY
+    - POSTGRES_PASSWORD
+    - POSTGRES_HOST
+    - POSTGRES_PORT
+    - POSTGRES_NAME
+    - POSTGRES_USER
+    - SITE_HOST
+
+services:
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend/:/app/:cached
+    restart: unless-stopped
+    command: sh -c "python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - db
+    ports:
+      - 8000:8000
+    <<: *app_environment
+
+  db:
+    build:
+      context: ./db
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_PORT=postgres
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+    restart: unless-stopped
+    ports:
+      - 15239:5432
+
+volumes:
+  postgresdata:
+  static:
