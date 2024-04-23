@@ -13,6 +13,7 @@ TESTING = "test" in argv or len(argv) >= 1 and "pytest" in argv[0]
 DEBUG = getenv("DEBUG", "True") == "True" and not TESTING
 
 ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000"]
 
 # Application definition
 

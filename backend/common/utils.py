@@ -1,5 +1,6 @@
 import random
 from time import sleep
+import string
 
 
 def generate_4_symbols_code():
@@ -9,3 +10,10 @@ def generate_4_symbols_code():
 def send_code():
     sleep(2)
     return None
+
+
+def get_invite_code():
+    letters = list(string.ascii_uppercase)
+    digits = list(string.digits)
+    characters = letters + digits
+    return "".join(random.sample(characters, 6))
