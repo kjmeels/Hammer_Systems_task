@@ -84,8 +84,12 @@ class TestUserViewSet(APITestCase):
         self.assertEqual(User.objects.count(), 0)
 
     def test_retrieve(self):
-        user = UserFactory()
-
+        usernames = ["+375291234567", "+375291234568", "+375291234569", "+375291234560"]
+        user = UserFactory(username="+375291234566", invite_code=get_invite_code())
+        referral_users = [
+            UserFactory(username=phone_number, invite_code=get_invite_code(), referral_code=user.invite_code)
+            for phone_number in usernames
+        ]
         self.client.force_authenticate(user=user)
 
         with self.assertNumQueries(2):
@@ -94,6 +98,7 @@ class TestUserViewSet(APITestCase):
         res_json = res.json()
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res_json["username"], user.username)
+        self.assertEqual(len(res_json["referral_users"]), len(referral_users))
 
     def test_send_invite_code(self):
         users = [UserFactory(invite_code=get_invite_code()) for _ in range(2)]
@@ -106,3 +111,34 @@ class TestUserViewSet(APITestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(users[1].referral_code, users[0].invite_code)
+
+    def test_send_invite_code_errors(self):
+        user = UserFactory(invite_code=get_invite_code(), referral_code=get_invite_code())
+        referral_user = UserFactory(invite_code=get_invite_code())
+        payload = {"invite_code": referral_user.invite_code}
+
+        self.client.force_authenticate(user=user)
+
+        with self.assertNumQueries(0):
+            res = self.client.post(self.send_invite_code_url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotEqual(user.referral_code, referral_user.referral_code)
+
+        new_user = UserFactory()
+        payload = {"invite_code": new_user.invite_code}
+
+        with self.assertNumQueries(0):
+            res = self.client.post(self.send_invite_code_url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(new_user.referral_code, "")
+
+        user1 = UserFactory(invite_code=get_invite_code())
+        payload = {"invite_code": get_invite_code()}
+
+        with self.assertNumQueries(0):
+            res = self.client.post(self.send_invite_code_url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(user1.referral_code, "")
