@@ -1,7 +1,7 @@
 import datetime
 from urllib.request import Request
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.hashers import make_password
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -52,6 +52,12 @@ class AuthenticationViewSet(GenericViewSet):
 
     @action(detail=False, methods=["POST"])
     def get_code(self, request: Request, *args, **kwargs) -> Response:
+        if self.request.user.is_authenticated:
+            return Response(
+                {"error": "Выйдите из текущего аккаунта прежде чем авторизоваться"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         create_code = AuthenticationCode(phone_number=serializer.data["phone_number"], code=generate_4_symbols_code())
@@ -108,3 +114,10 @@ class AuthenticationViewSet(GenericViewSet):
             user.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "Пользователя с таким инвайт-кодом не существует"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=["POST"])
+    def logout(self, request: Request, *args, **kwargs) -> Response:
+        if self.request.user.is_authenticated:
+            logout(request)
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_401_UNAUTHORIZED)

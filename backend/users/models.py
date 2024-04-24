@@ -5,7 +5,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 class User(AbstractUser):
     invite_code = models.CharField(verbose_name="Инвайт код", max_length=6, unique=True, default="")
-    referral_code = models.CharField(verbose_name="Реферальный код", max_length=6, default="")
+    referral_code = models.CharField(verbose_name="Реферальный код", max_length=6, default="", blank=True)
 
     def __str__(self):
         return f"{self.username}"
